@@ -18,6 +18,6 @@
     <string name="model_current_default">当前模型：无</string>
     <string name="model_import">导入模型文件</string>
     <string name="model_refresh">刷新</string>
-    <string name="model_online_title">在线模型（点击下载并启用）</string>
+    <string name="model_online_title">模型商店（点击即可下载并启用）</string>
     <string name="model_local_title">本地模型</string>
 </resources>

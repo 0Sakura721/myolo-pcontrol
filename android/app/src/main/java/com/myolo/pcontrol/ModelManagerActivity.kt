@@ -57,12 +57,17 @@ class ModelManagerActivity : AppCompatActivity() {
         onlineBox.removeAllViews()
         for (item in ModelCatalog.ITEMS) {
             val row = TextView(this).apply {
-                text = "📥 ${item.displayName}  (~${item.sizeMb}MB)\n" +
-                        "    ${item.desc}\n    点击下载到手机并自动启用"
+                text = (if (item.available) "📥 " else "🚫 ") + item.displayName +
+                        "  (~${item.sizeMb}MB)\n" +
+                        "    ${item.desc}\n" +
+                        if (item.available) "    点击下载到手机并自动启用" else "    暂未上架"
                 textSize = 14f
                 setPadding(16, 14, 16, 14)
             }
-            row.setOnClickListener { downloadModel(item) }
+            row.setOnClickListener {
+                if (item.available) downloadModel(item)
+                else Toast.makeText(this, "该模型暂未上架：请用仓库 tools/export_model.py 自行导出", Toast.LENGTH_LONG).show()
+            }
             onlineBox.addView(row)
         }
     }
