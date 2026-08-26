@@ -20,8 +20,8 @@ import threading
 import time
 from datetime import datetime
 
-from PySide6.QtCore import Qt, QObject, Signal, Slot, QShortcut
-from PySide6.QtGui import QKeySequence
+from PySide6.QtCore import Qt, QObject, Signal, Slot
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
