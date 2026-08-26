@@ -12,6 +12,8 @@
 线程模型：网络与鼠标操作全部放在后台工作线程（ServerWorker），通过 Qt 信号把日志
 /连接数/推流状态/运行状态传递回 UI 线程刷新，避免阻塞与卡死界面。
 
+界面按「①先启动服务 → ②手机填 IP 连接 → ③控制」的操作流组织，降低上手门槛。
+
 运行：  python gui.py
 """
 
@@ -51,6 +53,177 @@ DEFAULT_SCALE = 1.0
 
 # 连续 move 指令合并为摘要日志的最小间隔（秒）
 LOG_SUMMARY_INTERVAL = 3.0
+
+VERSION = "1.2"
+
+# ----------------------------------------------------------------------
+# 全局 QSS 样式表：浅色科技风
+# ----------------------------------------------------------------------
+GLOBAL_QSS = """
+* {
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+}
+QMainWindow, QWidget {
+    background-color: #f5f6fa;
+    font-size: 10pt;
+    color: #1f2937;
+}
+
+/* ---------- 卡片（QGroupBox） ---------- */
+QGroupBox {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-top: 18px;
+    padding: 16px 12px 12px 12px;
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: #111827;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 14px;
+    top: 0px;
+    padding: 0 6px;
+}
+
+QLabel { background: transparent; }
+QGroupBox QLabel { background: transparent; }
+
+/* ---------- 通用按钮 ---------- */
+QPushButton {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 10pt;
+    font-weight: 600;
+    color: #374151;
+}
+QPushButton:hover { background-color: #f3f4f6; border-color: #9ca3af; }
+QPushButton:pressed { background-color: #e5e7eb; }
+QPushButton:disabled { background-color: #f3f4f6; color: #9ca3af; border-color: #e5e7eb; }
+
+/* 主按钮（启动） */
+QPushButton#primaryBtn {
+    background-color: #3b82f6;
+    color: #ffffff;
+    border: none;
+    padding: 10px 24px;
+    font-size: 10.5pt;
+    border-radius: 8px;
+}
+QPushButton#primaryBtn:hover { background-color: #2563eb; }
+QPushButton#primaryBtn:pressed { background-color: #1d4ed8; }
+QPushButton#primaryBtn:disabled { background-color: #93c5fd; color: #eef2ff; }
+
+/* 危险按钮（停止） */
+QPushButton#dangerBtn {
+    background-color: #ffffff;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+QPushButton#dangerBtn:hover { background-color: #fef2f2; border-color: #dc2626; }
+QPushButton#dangerBtn:pressed { background-color: #fee2e2; }
+QPushButton#dangerBtn:disabled { background-color: #f3f4f6; color: #fca5a5; border-color: #e5e7eb; }
+
+/* 轻量按钮（清空日志等） */
+QPushButton#ghostBtn {
+    background-color: transparent;
+    color: #6b7280;
+    border: none;
+    padding: 6px 12px;
+    font-size: 9.5pt;
+}
+QPushButton#ghostBtn:hover { color: #374151; background-color: #f3f4f6; border-radius: 6px; }
+QPushButton#ghostBtn:pressed { background-color: #e5e7eb; }
+
+/* ---------- 输入控件 ---------- */
+QSpinBox, QDoubleSpinBox, QPlainTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 10pt;
+    color: #1f2937;
+}
+QSpinBox, QDoubleSpinBox { min-width: 90px; }
+QSpinBox:hover, QDoubleSpinBox:hover, QPlainTextEdit:hover { border-color: #9ca3af; }
+QSpinBox:focus, QDoubleSpinBox:focus, QPlainTextEdit:focus { border-color: #3b82f6; }
+
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    background: #f3f4f6;
+    border: none;
+    width: 18px;
+    border-radius: 4px;
+}
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover { background: #e5e7eb; }
+
+/* ---------- 复选框 ---------- */
+QCheckBox { font-size: 10pt; spacing: 8px; }
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+}
+QCheckBox::indicator:hover { border-color: #9ca3af; }
+QCheckBox::indicator:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+/* ---------- 日志区 ---------- */
+QPlainTextEdit {
+    background-color: #fafafb;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 9.5pt;
+}
+
+/* ---------- 状态栏 ---------- */
+QStatusBar {
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-size: 9.5pt;
+}
+QStatusBar::item { border: none; }
+
+/* ---------- 标题区 ---------- */
+QLabel#appTitle { font-size: 20pt; font-weight: 800; color: #111827; }
+QLabel#appSubtitle { font-size: 10.5pt; color: #6b7280; }
+QLabel#versionTag { font-size: 9.5pt; color: #9ca3af; }
+
+/* ---------- 本机 IP ---------- */
+QLabel#ipLabel {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 15pt;
+    font-weight: 700;
+    color: #3b82f6;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+/* ---------- 提示小字 ---------- */
+QLabel#hintLabel { color: #6b7280; font-size: 9.5pt; }
+
+/* ---------- 服务状态徽标 ---------- */
+QLabel#stateBadge {
+    border-radius: 11px;
+    padding: 4px 14px;
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #ffffff;
+}
+QLabel#stateBadge[running="false"] { background-color: #9ca3af; }
+QLabel#stateBadge[running="true"]  { background-color: #16a34a; }
+"""
 
 
 def _is_private_ip(ip: str) -> bool:
@@ -442,8 +615,9 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("myolo-pcontrol 桌面控制端 v1.1（手机远程控制电脑鼠标）")
-        self.resize(780, 600)
+        self.setWindowTitle("myolo-pcontrol 桌面控制端 v%s（手机远程控制电脑鼠标）" % VERSION)
+        self.resize(920, 680)
+        self.setMinimumSize(800, 600)
 
         # 当前运行中的工作线程（未启动时为 None）
         self._worker = None
@@ -461,33 +635,91 @@ class MainWindow(QMainWindow):
     # 界面搭建
     # ------------------------------------------------------------------
     def _build_ui(self):
+        self.setStyleSheet(GLOBAL_QSS)
+
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
+        root.setContentsMargins(16, 14, 16, 8)
+        root.setSpacing(12)
 
-        # --- 服务设置 ---
-        settings_box = QGroupBox("服务设置")
-        form = QFormLayout(settings_box)
+        # --- 顶部标题区 ---
+        header = QVBoxLayout()
+        header.setSpacing(2)
+        title_row = QHBoxLayout()
+        self._app_title = QLabel("myolo-pcontrol")
+        self._app_title.setObjectName("appTitle")
+        self._version_tag = QLabel("v" + VERSION)
+        self._version_tag.setObjectName("versionTag")
+        title_row.addWidget(self._app_title)
+        title_row.addStretch()
+        title_row.addWidget(self._version_tag, 0, Qt.AlignTop)
+        header.addLayout(title_row)
+        self._app_subtitle = QLabel("手机画面 → YOLO 推理 → 电脑鼠标")
+        self._app_subtitle.setObjectName("appSubtitle")
+        header.addWidget(self._app_subtitle)
+        root.addLayout(header)
+
+        # --- 第 1 步 · 启动服务 ---
+        step1 = QGroupBox("第 1 步 · 启动服务")
+        s1 = QVBoxLayout(step1)
+        s1.setSpacing(10)
+        self._service_form = QFormLayout()
+        self._service_form.setVerticalSpacing(8)
+        self._service_form.setLabelAlignment(Qt.AlignLeft)
+
         self._port_spin = QSpinBox()
         self._port_spin.setRange(1, 65535)
         self._port_spin.setValue(DEFAULT_PORT)
-        form.addRow("监听端口", self._port_spin)
+        self._service_form.addRow("监听端口", self._port_spin)
 
         self._alpha_spin = QDoubleSpinBox()
         self._alpha_spin.setRange(0.05, 1.0)
         self._alpha_spin.setSingleStep(0.05)
         self._alpha_spin.setValue(DEFAULT_ALPHA)
-        form.addRow("EMA 平滑系数 (alpha)", self._alpha_spin)
+        self._service_form.addRow("EMA 平滑系数 (alpha)", self._alpha_spin)
 
         self._scale_spin = QDoubleSpinBox()
         self._scale_spin.setRange(0.1, 5.0)
         self._scale_spin.setSingleStep(0.1)
         self._scale_spin.setValue(DEFAULT_SCALE)
-        form.addRow("坐标缩放倍率", self._scale_spin)
+        self._service_form.addRow("坐标缩放倍率", self._scale_spin)
+        s1.addLayout(self._service_form)
 
-        # 本机局域网 IP 展示 + 复制按钮，方便用户照填手机端
+        # 状态徽标 + 暂停开关
+        badge_row = QHBoxLayout()
+        self._state_badge = QLabel("● 未启动")
+        self._state_badge.setObjectName("stateBadge")
+        self._state_badge.setProperty("running", False)
+        badge_row.addWidget(self._state_badge)
+        badge_row.addStretch()
+        self._pause_cb = QCheckBox("暂停鼠标控制（快捷键：空格）")
+        self._pause_cb.stateChanged.connect(self._on_pause_toggled)
+        badge_row.addWidget(self._pause_cb)
+        s1.addLayout(badge_row)
+
+        # 启动 / 停止按钮
+        btn_row = QHBoxLayout()
+        self._start_btn = QPushButton("启动服务")
+        self._start_btn.setObjectName("primaryBtn")
+        self._start_btn.clicked.connect(self._on_start)
+        self._stop_btn = QPushButton("停止服务")
+        self._stop_btn.setObjectName("dangerBtn")
+        self._stop_btn.setEnabled(False)
+        self._stop_btn.clicked.connect(self._on_stop)
+        btn_row.addWidget(self._start_btn)
+        btn_row.addWidget(self._stop_btn)
+        btn_row.addStretch()
+        s1.addLayout(btn_row)
+        root.addWidget(step1)
+
+        # --- 第 2 步 · 手机端连接 ---
+        step2 = QGroupBox("第 2 步 · 手机端连接")
+        s2 = QVBoxLayout(step2)
+        s2.setSpacing(10)
         ip_row = QHBoxLayout()
         self._ip_label = QLabel()
+        self._ip_label.setObjectName("ipLabel")
         self._ip_label.setWordWrap(True)
         self._ip_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self._set_ip_text()
@@ -495,20 +727,29 @@ class MainWindow(QMainWindow):
         self._copy_ip_btn = QPushButton("复制")
         self._copy_ip_btn.setToolTip("复制本机局域网 IP 到剪贴板，方便填入手机端")
         self._copy_ip_btn.clicked.connect(self._copy_ip)
-        ip_row.addWidget(self._copy_ip_btn)
-        form.addRow("本机局域网 IP", ip_row)
+        ip_row.addWidget(self._copy_ip_btn, 0, Qt.AlignTop)
+        s2.addLayout(ip_row)
 
-        # 启动后显示监听地址 + 提示
-        self._listen_info_label = QLabel("未启动")
-        self._listen_info_label.setWordWrap(True)
-        self._listen_info_label.setStyleSheet("color: #555555;")
-        form.addRow("", self._listen_info_label)
+        meta_row = QHBoxLayout()
+        self._conn_label = QLabel(f"当前连接数：{self._conn_count}")
+        meta_row.addWidget(self._conn_label)
+        meta_row.addStretch()
+        s2.addLayout(meta_row)
 
-        root.addWidget(settings_box)
+        self._conn_hint = QLabel("在手机 App 填写上方 IP 与端口（默认 9999）后点击连接")
+        self._conn_hint.setObjectName("hintLabel")
+        self._conn_hint.setWordWrap(True)
+        s2.addWidget(self._conn_hint)
+        root.addWidget(step2)
 
-        # --- 屏幕推流 ---
-        stream_box = QGroupBox("屏幕推流")
-        stream_form = QFormLayout(stream_box)
+        # --- 第 3 步 · 屏幕推流 ---
+        step3 = QGroupBox("第 3 步 · 屏幕推流")
+        s3 = QVBoxLayout(step3)
+        s3.setSpacing(10)
+        stream_form = QFormLayout()
+        stream_form.setVerticalSpacing(8)
+        stream_form.setLabelAlignment(Qt.AlignLeft)
+
         self._stream_cb = QCheckBox("允许屏幕推流（手机端订阅即推流）")
         self._stream_cb.setChecked(True)
         stream_form.addRow("开关", self._stream_cb)
@@ -523,59 +764,42 @@ class MainWindow(QMainWindow):
         self._stream_quality_spin.setValue(70)
         self._stream_quality_spin.setToolTip("JPEG 压缩质量，仅影响新订阅的推流")
         stream_form.addRow("图像质量", self._stream_quality_spin)
+        s3.addLayout(stream_form)
 
-        # 说明：帧率/质量在启动时固化到 worker，运行中修改只影响后续新订阅的连接
-        stream_hint = QLabel("帧率/质量仅对之后新订阅的连接生效（已连接保持不变）")
-        stream_hint.setStyleSheet("color: #888888;")
-        stream_hint.setWordWrap(True)
-        stream_form.addRow("", stream_hint)
-
-        root.addWidget(stream_box)
-
-        # --- 控制 ---
-        ctrl_box = QGroupBox("控制")
-        ctrl_layout = QVBoxLayout(ctrl_box)
-
-        btn_row = QHBoxLayout()
-        self._start_btn = QPushButton("启动服务")
-        self._stop_btn = QPushButton("停止服务")
-        self._stop_btn.setEnabled(False)
-        self._start_btn.clicked.connect(self._on_start)
-        self._stop_btn.clicked.connect(self._on_stop)
-        btn_row.addWidget(self._start_btn)
-        btn_row.addWidget(self._stop_btn)
-        btn_row.addStretch()
-
-        self._pause_cb = QCheckBox("暂停鼠标控制（快捷键：空格）")
-        self._pause_cb.stateChanged.connect(self._on_pause_toggled)
-        btn_row.addWidget(self._pause_cb)
-        ctrl_layout.addLayout(btn_row)
-
-        # 连接数显示
-        self._conn_label = QLabel(f"当前连接数：{self._conn_count}")
-        ctrl_layout.addWidget(self._conn_label)
-        root.addWidget(ctrl_box)
+        self._stream_hint = QLabel("手机画面来源选『电脑画面流』时生效；帧率/质量仅对之后新订阅的连接生效")
+        self._stream_hint.setObjectName("hintLabel")
+        self._stream_hint.setWordWrap(True)
+        s3.addWidget(self._stream_hint)
+        root.addWidget(step3)
 
         # --- 指令日志 ---
         log_box = QGroupBox("指令日志")
         log_layout = QVBoxLayout(log_box)
+        log_layout.setSpacing(8)
+        log_bar = QHBoxLayout()
+        self._log_note = QLabel("move 指令每 3 秒合并为一条摘要，click/scroll/drag 逐条记录")
+        self._log_note.setObjectName("hintLabel")
+        log_bar.addWidget(self._log_note)
+        log_bar.addStretch()
+        self._clear_log_btn = QPushButton("清空日志")
+        self._clear_log_btn.setObjectName("ghostBtn")
+        log_bar.addWidget(self._clear_log_btn)
+        log_layout.addLayout(log_bar)
+
         self._log_view = QPlainTextEdit()
         self._log_view.setReadOnly(True)
         self._log_view.setMaximumBlockCount(2000)  # 限制日志条数，避免内存膨胀
         log_layout.addWidget(self._log_view)
-
-        log_btn_row = QHBoxLayout()
-        log_btn_row.addStretch()
-        self._clear_log_btn = QPushButton("清空日志")
         self._clear_log_btn.clicked.connect(self._log_view.clear)
-        log_btn_row.addWidget(self._clear_log_btn)
-        log_layout.addLayout(log_btn_row)
         root.addWidget(log_box, 1)
 
+        # 首次打开显示欢迎指引
+        self._append_log("[欢迎] 欢迎！按上方步骤：1 启动服务 → 2 手机填 IP 连接 → 3 开始推流/使用")
+
         # --- 状态栏 ---
-        self._status_label = QLabel("就绪")
+        self._status_label = QLabel("未启动")
         self.statusBar().addPermanentWidget(self._status_label)
-        self.statusBar().showMessage("就绪")
+        self.statusBar().showMessage("就绪", 3000)
 
         # 空格键快捷暂停/恢复鼠标控制（翻转复选框，由 stateChanged 统一处理）
         self._space_shortcut = QShortcut(QKeySequence(Qt.Key_Space), self)
@@ -608,10 +832,7 @@ class MainWindow(QMainWindow):
 
         self._start_btn.setEnabled(False)
         self._stop_btn.setEnabled(True)
-        self._listen_info_label.setText(
-            f"监听 {DEFAULT_HOST}:{self._port_spin.value()}，"
-            "请手机端填写上方本机 IP 与端口"
-        )
+        self.statusBar().showMessage(f"正在监听 {DEFAULT_HOST}:{self._port_spin.value()}", 3000)
         self._worker.start()
 
     @Slot()
@@ -623,7 +844,6 @@ class MainWindow(QMainWindow):
         self._stop_btn.setEnabled(False)
         self._set_settings_enabled(True)
         self._update_conn(0)
-        self._listen_info_label.setText("未启动")
 
     @Slot()
     def _toggle_pause(self):
@@ -638,7 +858,7 @@ class MainWindow(QMainWindow):
             self._worker.set_paused(paused)
         state = "已暂停鼠标控制" if paused else "已恢复鼠标控制"
         self._append_log(f"[{_now_hms()}] {state}")
-        self.statusBar().showMessage(state)
+        self.statusBar().showMessage(state, 3000)
 
     @Slot(str)
     def _append_log(self, line: str):
@@ -657,8 +877,9 @@ class MainWindow(QMainWindow):
 
     @Slot(bool)
     def _on_state_change(self, running: bool):
-        """根据运行状态更新状态栏提示。"""
-        self.statusBar().showMessage("服务运行中" if running else "服务已停止")
+        """根据运行状态更新状态徽标与状态栏提示。"""
+        self._set_state_badge(running)
+        self.statusBar().showMessage("服务运行中" if running else "服务已停止", 3000)
         self._refresh_status()
 
     @Slot(bool, int)
@@ -675,19 +896,23 @@ class MainWindow(QMainWindow):
             QApplication.clipboard().setText(self._primary_ip)
             self.statusBar().showMessage(f"已复制本机 IP：{self._primary_ip}", 3000)
 
+    def _set_state_badge(self, running: bool):
+        """更新服务状态徽标的文案与配色（通过动态属性触发 QSS 重绘）。"""
+        self._state_badge.setProperty("running", running)
+        self._state_badge.setText("● 运行中" if running else "● 未启动")
+        # 强制重算样式，让 [running=...] 选择器生效
+        self._state_badge.style().unpolish(self._state_badge)
+        self._state_badge.style().polish(self._state_badge)
+
     def _refresh_status(self):
-        """刷新底部状态栏文本：监听 · 连接数 · 推流 · 本机 IP。"""
-        # 顺序：监听 / 连接数 / 推流 / 本机 IP（与需求描述一致）
-        parts = [f"本机 IP {self._primary_ip}"]
+        """刷新底部状态栏文本：监听地址 · 连接数 · 推流状态。"""
         if self._worker is not None and self._worker._running:
-            parts.insert(0, f"监听 {DEFAULT_HOST}:{self._port_spin.value()}")
-            parts.insert(1, f"连接数 {self._conn_count}")
-            stream_txt = "开" if self._stream_active else "关"
-            if self._stream_active:
-                stream_txt += f"({self._stream_fps}fps)"
-            parts.insert(2, f"推流 {stream_txt}")
+            listen = f"监听 {DEFAULT_HOST}:{self._port_spin.value()}"
+            stream_txt = f"推流 开({self._stream_fps}fps)" if self._stream_active else "推流 关"
         else:
-            parts.insert(0, "未启动")
+            listen = "未启动"
+            stream_txt = "推流 关"
+        parts = [listen, f"连接数 {self._conn_count}", stream_txt]
         self._status_label.setText(" · ".join(parts))
 
     def _set_ip_text(self):
