@@ -1,0 +1,2 @@
+# 占位：将 ncnn 预编译 libncnn.so 放入此目录（armeabi-v7a）
+# 同时请把 headers 放到 src/main/cpp/libncnn/include/

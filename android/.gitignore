@@ -1,0 +1,15 @@
+# 构建产物
+build/
+.gradle/
+local.properties
+.idea/
+*.iml
+
+# 大体积二进制（用户手动放置，不入库）
+app/src/main/jniLibs/**/*.so
+app/src/main/cpp/libncnn/
+
+# 模型文件（用户手动放置，不入库）
+*.param
+*.bin
+app/src/main/assets/models/

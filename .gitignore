@@ -1,0 +1,40 @@
+# --- 根 ---
+*.iml
+*.log
+.DS_Store
+.idea/
+
+# --- Python (pc/) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# --- Android (android/) ---
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+
+# NCNN / SDK 二进制与模型（体积大，单独下载）
+*.param
+*.bin
+*.so
+*.onnx
+*.engine
+*.dlc
+*.hiai
+
+# gradle
+android/.gradle/
+android/captures/
+android/app/build/
+
+# 凭据不要入库
+*.key
+*.pem
+*.keystore
+credentials*
+.env
