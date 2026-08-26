@@ -28,8 +28,9 @@ object Pipeline {
 
     @Volatile private var modelLoaded = false
 
-    private const val PARAM_FILE = "model.param"
-    private const val BIN_FILE = "model.bin"
+    /** 模型文件名（可改为 yolo26n.param / yolo26n.bin 等，与导出的模型一致） */
+    @Volatile var modelParam = "model.param"
+    @Volatile var modelBin = "model.bin"
 
     /**
      * 加载模型（幂等）。模型文件需放到 files/models/ 下：
@@ -41,8 +42,8 @@ object Pipeline {
         if (modelLoaded) return true
         val cfg = DeviceTier.backend
         val dir = File(context.filesDir, "models").apply { mkdirs() }
-        val param = File(dir, PARAM_FILE)
-        val bin = File(dir, BIN_FILE)
+        val param = File(dir, modelParam)
+        val bin = File(dir, modelBin)
         if (!param.exists() || !bin.exists()) return false
         val ok = detector.create(param.absolutePath, bin.absolutePath, cfg.useGpu)
         modelLoaded = ok

@@ -15,6 +15,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.IntentCompat
 import com.myolo.pcontrol.R
 import com.myolo.pcontrol.capture.ScreenCapture
+import com.myolo.pcontrol.inference.DeviceTier
+import com.myolo.pcontrol.inference.Tier
 import com.myolo.pcontrol.pipeline.Pipeline
 
 /**
@@ -53,11 +55,17 @@ class ScreenCaptureService : Service() {
 
         if (data != null) {
             val projection = projectionManager.getMediaProjection(resultCode, data)
-            // 目标分辨率 640x480（低端机可降为 320x240）
+            // 按设备档位动态选择捕获分辨率与帧率（硬件感知动态调度，降低低端机发热/卡顿）
+            val (w, h, fps) = when (DeviceTier.backend.tier) {
+                Tier.LOW -> 320 to 240 to 12
+                Tier.MEDIUM -> 480 to 320 to 15
+                else -> 640 to 480 to 25
+            }
             capture = ScreenCapture(
-                projection, 640, 480,
-                resources.displayMetrics.densityDpi
-            ) { rgba, w, h -> Pipeline.processFrame(rgba, w, h) }
+                projection, w, h,
+                resources.displayMetrics.densityDpi,
+                fps
+            ) { rgba, ww, hh -> Pipeline.processFrame(rgba, ww, hh) }
             capture?.start()
             Pipeline.running = true
         }

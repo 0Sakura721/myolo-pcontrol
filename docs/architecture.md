@@ -41,6 +41,7 @@ net.load_model("yolo26n.bin");
 | 低端 | Vulkan 弱+<4GB | NCNN+CPU(ARM NEON) | INT8 量化 | `use_vulkan_compute=false` |
 
 启动时检测 NPU 可用性、Vulkan 版本与扩展、CPU 与内存，自动分级。
+运行期动态调度：按档位自动选择捕获分辨率与帧率（LOW 320x240@12fps / MEDIUM 480x320@15fps / 高档 640x480@25fps），通过帧率节流降低推理负载、发热与卡顿（ScreenCapture.maxFps）。
 
 ### 2.4 后处理与指令编码
 - 解析检测框 → NMS/无 NMS(端到端) → 置信度过滤(0.5)

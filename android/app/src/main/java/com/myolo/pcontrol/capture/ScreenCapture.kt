@@ -8,6 +8,7 @@ import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 
 /** 帧回调：rgba 为紧凑 W*H*4 的 RGBA8888 像素缓冲（fun interface，支持 SAM lambda） */
 fun interface FrameCallback {
@@ -17,20 +18,25 @@ fun interface FrameCallback {
 /**
  * 屏幕捕获：MediaProjection + VirtualDisplay + ImageReader。
  *  - 像素格式 RGBA_8888
- *  - 目标分辨率 640x480（可降为 320x240）
+ *  - 目标分辨率可调（640x480 默认，低端机建议 320x240）
  *  - maxImages = 2
  *  - 回调里复用字节缓冲，并处理 rowStride 对齐
+ *  - maxFps 节流：按设备档位限制处理帧率，降低推理负载与发热
  */
 class ScreenCapture(
     private val mediaProjection: MediaProjection,
     private val width: Int,
     private val height: Int,
     private val densityDpi: Int,
+    private val maxFps: Int = 30,
     private val callback: FrameCallback
 ) {
     private var imageReader: ImageReader? = null
     private var virtualDisplay: VirtualDisplay? = null
     private val handlerThread = HandlerThread("screen-capture").apply { start() }
+
+    // 帧率节流：上一帧被处理的时间戳（毫秒）
+    @Volatile private var lastFrameAt = 0L
 
     fun start() {
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
@@ -46,6 +52,11 @@ class ScreenCapture(
     }
 
     private fun onImageAvailable(reader: ImageReader) {
+        // 帧率节流：距上一帧不足间隔则丢弃本帧（acquireLatestImage 拿最新帧，跳过不影响跟手性）
+        val now = SystemClock.uptimeMillis()
+        val interval = 1000L / maxFps.coerceAtLeast(1)
+        if (now - lastFrameAt < interval) return
+        lastFrameAt = now
         val image = reader.acquireLatestImage() ?: return
         try {
             val plane = image.planes[0]
