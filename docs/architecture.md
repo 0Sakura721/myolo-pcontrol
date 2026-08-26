@@ -84,14 +84,38 @@ model.export(format="ncnn", imgsz=640, half=True)   # FP16 推荐
 # INT8 需先 FP16 导出，再用 ncnn2int8 量化
 ```
 
-## 6. 模型准备（构建 Android 前）
+## 6. 模型准备（构建/运行 Android 前）
 
-1. `pip install ultralytics` 并导出 `yolo26n` 的 NCNN 模型（`.param` + `.bin`）。
-2. 从 [ncnn](https://github.com/Tencent/ncnn/releases) 下载对应 ABI 的预编译库，或从源码编译。
-3. 拷贝到：
-   - 头文件 → `app/src/main/cpp/libncnn/include/`（解压 `ncnn-*-android-vulkan-shared` 包取 `<abi>/include`，内含 `ncnn/` 子目录）
-   - 推理库 → `app/src/main/jniLibs/<abi>/`（`libncnn.so`，shared 包中位于 `<abi>/lib/`）
-   - 模型 → 安装 APK 后 `adb push model.param /data/data/com.myolo.pcontrol/files/models/`、`adb push model.bin /data/data/com.myolo.pcontrol/files/models/`
+### 6.1 获取 YOLO → NCNN 模型（一条命令）
+
+```bash
+pip install ultralytics
+python tools/export_model.py yolo26n 640   # 也可 yolov8n / yolo11n，imgsz 可调 416
+```
+
+产物在 `dist/models/<name>_ncnn.param`（~几 KB）与 `<name>_ncnn.bin`（~3-10MB）。
+导出即用 NCNN（FP16，无需 pnnx），命令行加 `half=False` 可导出 FP32 调试版。
+
+备选：直接下载目标模型
+
+1. **科学上网直连**：从 [Ultralytics Assets](https://github.com/ultralytics/assets/releases) 下载 `yolo26n.pt`（或 yolo8n.pt / yolo11n.pt），再用上面的命令导出。
+2. **镜像加速**：`pip install -i https://pypi.tuna.tsinghua.edu.cn/simple ultralytics`；`python tools/export_model.py` 会自动从 GitHub 拉取权重，如网络不通可先手动下载 `.pt` 放当前目录。
+3. **其它现成 ncnn 模型社区**：ncnn-assets 等（仅作参考，建议用 ultralytics 自导以保证输出层与本项目解码一致）。
+
+### 6.2 模型放上手机（两种方式）
+
+- 方式一（推荐）：安装 APK → 主界面「模型管理」→「导入模型文件」，从存储选择 `.param` + `.bin` → 点击启用。
+- 方式二：`adb push dist/models/yolo26n_ncnn.param /data/data/com.myolo.pcontrol/files/models/yolo26n.param`（.bin 同理），再用「模型管理」启用。
+
+> 注意：`ncnn_detector.cpp` 中 `ex.extract("out")` 的层名与解码布局需与实际导出模型一致（代码已标 TODO）；如检测不到目标，先从该处核对。
+
+### 6.3 NCNN 预编译库（构建时需要）
+
+从 [ncnn releases](https://github.com/Tencent/ncnn/releases) 下载 `ncnn-<日期>-android-vulkan-shared.zip`（CI 已自动做，本地构建需要）：
+
+1. 头文件 → `app/src/main/cpp/libncnn/include/`（解压包取 `<abi>/include`，内含 `ncnn/` 子目录）
+2. 推理库 → `app/src/main/jniLibs/<abi>/`（`libncnn.so`，shared 包中位于 `<abi>/lib/`）
+3. 模型 → 见 6.2
 
 > 模型与 `.so` 体积大，已 `.gitignore`，不随仓库分发。
 
