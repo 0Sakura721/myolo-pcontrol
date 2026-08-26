@@ -13,7 +13,6 @@
 运行：  python gui.py
 """
 
-import json
 import socket
 import threading
 import time
@@ -38,7 +37,8 @@ from PySide6.QtWidgets import (
 
 # 复用现有模块（与 server.py 保持同一套实现，不改动它们）
 from mouse_controller import MouseController
-from protocol import decode_command, encode, read_frame
+from protocol import decode_command, read_frame
+from screen_stream import ScreenStreamer, send_json_frame
 
 # 默认监听参数，与 server.py 保持一致
 DEFAULT_HOST = "0.0.0.0"
@@ -91,11 +91,15 @@ class ServerWorker(QObject):
     # 运行状态信号（True=运行中，False=已停止）
     state_emit = Signal(bool)
 
-    def __init__(self, port: int, alpha: float, scale: float):
+    def __init__(self, port: int, alpha: float, scale: float,
+                 stream_enabled: bool = True, stream_fps: int = 10, stream_quality: int = 70):
         super().__init__()
         self.port = port
         self.alpha = alpha
         self.scale = scale
+        self.stream_enabled = stream_enabled      # 是否接受屏幕推流订阅
+        self.stream_fps = stream_fps              # 推流默认帧率
+        self.stream_quality = stream_quality      # 推流默认 JPEG 质量
         self._running = False          # 是否继续运行
         self._paused = False           # 暂停鼠标控制（界面可切换）
         self._worker_thread = None     # 服务线程
@@ -204,6 +208,10 @@ class ServerWorker(QObject):
 
     def _handle_client(self, conn, client_id: str, controller: MouseController):
         """处理单个客户端连接：读帧、解码、执行、回执（复刻 server.py）。"""
+        # 当前连接的屏幕推流器（无订阅时为 None）
+        streamer = None
+        # 该连接的发送锁：屏幕帧线程与回执线程共用，防止并发 sendall 帧错位
+        send_lock = threading.Lock()
         try:
             while self._running:
                 # 阻塞读取一帧；连接被关闭时 read_frame 抛 EOFError/OSError
@@ -222,8 +230,37 @@ class ServerWorker(QObject):
 
                 op = cmd.get("op", "none")
 
-                # 暂停则只回执，不实际控制鼠标
-                if self._paused:
+                # 屏幕推流订阅（控制类指令，不走鼠标控制器）
+                if op == "subscribe_screen":
+                    if self.stream_enabled:
+                        if streamer is None or not streamer.is_alive():
+                            streamer = ScreenStreamer(
+                                conn,
+                                fps=cmd.get("fps", self.stream_fps),
+                                quality=cmd.get("quality", self.stream_quality),
+                                send_lock=send_lock,
+                            )
+                            streamer.start()
+                            self.log_emit.emit(
+                                f"[{_now_hms()}] {client_id} 已订阅屏幕推流 "
+                                f"(fps={streamer.fps}, quality={streamer.quality})"
+                            )
+                        resp = {"op": "ok"}
+                    else:
+                        self.log_emit.emit(
+                            f"[{_now_hms()}] {client_id} 请求屏幕推流，但推流未启用"
+                        )
+                        resp = {"op": "error", "error": "screen_stream_disabled"}
+                elif op == "unsubscribe_screen":
+                    if streamer is not None:
+                        streamer.stop()
+                        streamer = None
+                        self.log_emit.emit(
+                            f"[{_now_hms()}] {client_id} 已取消屏幕推流订阅"
+                        )
+                    resp = {"op": "ok"}
+                elif self._paused:
+                    # 暂停则只回执，不实际控制鼠标
                     resp = {"op": "paused"}
                 else:
                     # 执行指令（容错：单条失败不中断连接）
@@ -239,10 +276,9 @@ class ServerWorker(QObject):
                     f"[{_now_hms()}] {client_id}  {_fmt_cmd(cmd)} -> {resp.get('op')}"
                 )
 
-                # 回执（ping 回 pong，其它回 ok / paused / error）
-                resp_bytes = json.dumps(resp).encode("utf-8")
+                # 回执统一走带类型字节(0x00)的 JSON 帧
                 try:
-                    conn.sendall(encode(resp_bytes))
+                    send_json_frame(conn, resp, send_lock)
                 except OSError as e:
                     self.log_emit.emit(
                         f"[{_now_hms()}] {client_id} 发送响应失败: {e}"
@@ -256,6 +292,9 @@ class ServerWorker(QObject):
         except OSError:
             pass  # 连接被 stop() 或对方关闭
         finally:
+            # 连接断开：停止推流
+            if streamer is not None:
+                streamer.stop()
             self.log_emit.emit(f"[{_now_hms()}] {client_id} 断开连接")
             try:
                 conn.close()
@@ -330,6 +369,19 @@ class MainWindow(QMainWindow):
         btn_row.addWidget(self._pause_cb)
         ctrl_layout.addLayout(btn_row)
 
+        # 屏幕推流控制行：启停开关 + 帧率
+        stream_row = QHBoxLayout()
+        self._stream_cb = QCheckBox("屏幕推流（收到订阅即推流）")
+        self._stream_cb.setChecked(True)
+        stream_row.addWidget(self._stream_cb)
+        stream_row.addWidget(QLabel("帧率"))
+        self._stream_fps_spin = QSpinBox()
+        self._stream_fps_spin.setRange(1, 30)
+        self._stream_fps_spin.setValue(10)
+        stream_row.addWidget(self._stream_fps_spin)
+        stream_row.addStretch()
+        ctrl_layout.addLayout(stream_row)
+
         # 连接数显示
         self._conn_label = QLabel(f"当前连接数：{self._conn_count}")
         ctrl_layout.addWidget(self._conn_label)
@@ -370,6 +422,8 @@ class MainWindow(QMainWindow):
             port=self._port_spin.value(),
             alpha=self._alpha_spin.value(),
             scale=self._scale_spin.value(),
+            stream_enabled=self._stream_cb.isChecked(),
+            stream_fps=self._stream_fps_spin.value(),
         )
         # 跨线程信号 → UI 线程槽
         self._worker.log_emit.connect(self._append_log)
@@ -434,6 +488,8 @@ class MainWindow(QMainWindow):
         self._port_spin.setEnabled(enabled)
         self._alpha_spin.setEnabled(enabled)
         self._scale_spin.setEnabled(enabled)
+        self._stream_cb.setEnabled(enabled)
+        self._stream_fps_spin.setEnabled(enabled)
 
     def closeEvent(self, event):
         """关闭窗口时干净地停止所有线程与 socket。"""

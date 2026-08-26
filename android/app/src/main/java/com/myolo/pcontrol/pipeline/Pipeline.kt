@@ -1,6 +1,8 @@
 package com.myolo.pcontrol.pipeline
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.myolo.pcontrol.inference.DeviceTier
 import com.myolo.pcontrol.inference.NcnnDetector
 import com.myolo.pcontrol.net.TcpClient
@@ -21,7 +23,15 @@ object AppConfig {
  */
 object Pipeline {
 
+    /** 画面来源：手机屏幕（本机 MediaProjection 捕获） */
+    const val MODE_PHONE_SCREEN = "phone_screen"
+    /** 画面来源：电脑画面流（接收服务端推流 JPEG 帧） */
+    const val MODE_PC_STREAM = "pc_stream"
+
     @Volatile var running = false
+
+    /** 当前画面来源模式，默认电脑画面流 */
+    @Volatile var captureMode = MODE_PC_STREAM
 
     private val detector = NcnnDetector
     private val tcp = TcpClient()
@@ -108,8 +118,76 @@ object Pipeline {
         }
     }
 
+    /**
+     * 电脑画面流入口：收到一帧 JPEG → 解码 → 缩放（宽 640）→ 紧凑 RGBA8888 → 检测 → 发送。
+     * 该回调仅在订阅电脑画面流后触发（[MODE_PC_STREAM]），无需受 running（本机捕获）门控。
+     */
+    fun processJpeg(jpeg: ByteArray) {
+        val bmp = try {
+            BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
+        } catch (e: Exception) {
+            null
+        } ?: return
+
+        // 等比缩放到宽 640
+        val targetW = 640
+        val scale = if (bmp.width > 0) targetW.toFloat() / bmp.width.toFloat() else 1f
+        val targetH = ((bmp.height * scale).toInt()).coerceAtLeast(1)
+        val scaled = if (bmp.width != targetW) {
+            Bitmap.createScaledBitmap(bmp, targetW, targetH, true)
+        } else {
+            bmp
+        }
+        val w = scaled.width
+        val h = scaled.height
+
+        // 像素 ARGB → 紧凑 RGBA8888
+        val pixels = IntArray(w * h)
+        scaled.getPixels(pixels, 0, w, 0, 0, w, h)
+        val rgba = ByteArray(w * h * 4)
+        var idx = 0
+        for (p in pixels) {
+            rgba[idx++] = ((p shr 16) and 0xFF).toByte() // R
+            rgba[idx++] = ((p shr 8) and 0xFF).toByte()  // G
+            rgba[idx++] = (p and 0xFF).toByte()          // B
+            rgba[idx++] = ((p shr 24) and 0xFF).toByte() // A
+        }
+        if (scaled !== bmp) scaled.recycle()
+        bmp.recycle()
+
+        val det = try {
+            detector.detect(rgba, w, h)
+        } catch (e: Exception) {
+            return
+        }
+        if (det.size >= 6) {
+            tcp.sendJson(CommandEncoder.encodeMoveByDetection(det))
+        } else {
+            tcp.sendJson(CommandEncoder.encodeNone())
+        }
+    }
+
+    /**
+     * 切换画面来源。电脑画面流模式：连接后自动订阅；切走时取消订阅（未连接时为空操作）。
+     */
+    fun setCaptureMode(mode: String) {
+        captureMode = mode
+        if (mode == MODE_PC_STREAM) tcp.subscribeScreen(10) else tcp.unsubscribeScreen()
+    }
+
     fun connect(context: Context, listener: TcpClient.Listener?) {
-        if (listener != null) tcp.listener = listener
+        val base = listener ?: object : TcpClient.Listener {
+            override fun onConnected() {}
+            override fun onDisconnected(reason: String?) {}
+        }
+        tcp.listener = object : TcpClient.Listener {
+            override fun onConnected() {
+                // 电脑画面流：连接建立后自动订阅服务端推流
+                if (captureMode == MODE_PC_STREAM) tcp.subscribeScreen(10)
+                base.onConnected()
+            }
+            override fun onDisconnected(reason: String?) = base.onDisconnected(reason)
+        }
         ensureModel(context)
         tcp.connect(AppConfig.serverIp, AppConfig.serverPort)
     }

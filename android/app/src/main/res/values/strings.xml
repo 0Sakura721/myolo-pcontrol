@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MyoloPcontrol</string>
+    <string name="label_source">画面来源</string>
+    <string name="radio_pc_stream">电脑画面流</string>
+    <string name="radio_phone_screen">手机屏幕</string>
     <string name="label_ip">服务端 IP</string>
     <string name="hint_ip">192.168.1.100</string>
     <string name="btn_capture_start">开始捕获</string>

@@ -4,6 +4,10 @@ pynput
 # 运行 pc/gui.py（桌面 GUI 模式，PySide6）所需
 PySide6
 
+# 屏幕推流（server.py / gui.py 均支持）所需
+mss
+pillow
+
 # 可选：打包 exe 时使用
 #   pip install pyinstaller
 #   pyinstaller desktop.spec

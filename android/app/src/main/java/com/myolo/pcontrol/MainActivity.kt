@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,6 +62,15 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         preview = findViewById(R.id.preview)
 
+        // 画面来源切换：电脑画面流（默认）/ 手机屏幕
+        findViewById<RadioGroup>(R.id.sourceGroup).setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == R.id.radioPcStream) {
+                Pipeline.setCaptureMode(Pipeline.MODE_PC_STREAM)
+            } else if (checkedId == R.id.radioPhoneScreen) {
+                Pipeline.setCaptureMode(Pipeline.MODE_PHONE_SCREEN)
+            }
+        }
+
         findViewById<Button>(R.id.btnCaptureStart).setOnClickListener { startCapture() }
         findViewById<Button>(R.id.btnCaptureStop).setOnClickListener { stopCapture() }
         findViewById<Button>(R.id.btnConnect).setOnClickListener { connectServer() }
@@ -84,7 +94,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startCapture() {
-        // 授权流程：先请求投屏权限
+        // 电脑画面流：不启用本机 MediaProjection，连接服务端后即开始接收电脑画面
+        if (Pipeline.captureMode == Pipeline.MODE_PC_STREAM) {
+            statusText.text = "状态：电脑画面流，请先连接服务端"
+            Toast.makeText(this, "电脑画面流：点「连接」后开始接收电脑画面", Toast.LENGTH_LONG).show()
+            return
+        }
+        // 手机屏幕：授权流程，先请求投屏权限
         captureLauncher.launch(projectionManager.createScreenCaptureIntent())
     }
 

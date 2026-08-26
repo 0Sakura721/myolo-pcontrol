@@ -4,7 +4,6 @@ import org.json.JSONObject
 import java.io.InputStream
 import java.net.InetSocketAddress
 import java.net.Socket
-import kotlin.math.min
 
 /**
  * TCP 客户端：
@@ -18,6 +17,8 @@ class TcpClient {
     interface Listener {
         fun onConnected()
         fun onDisconnected(reason: String?)
+        /** 收到一帧 JPEG 图片（电脑画面流）。默认空实现，兼容现有监听者。 */
+        fun onJpegFrame(bytes: ByteArray) {}
     }
 
     @Volatile var listener: Listener? = null
@@ -36,7 +37,7 @@ class TcpClient {
         private const val CONNECT_TIMEOUT_MS = 3000
         private const val SO_TIMEOUT_MS = 5000
         private const val MAX_BACKOFF_SHIFT = 5 // 1<<5 = 32s，取封顶 30s
-        private const val MAX_PAYLOAD = 64 * 1024
+        private const val MAX_PAYLOAD = 512 * 1024
     }
 
     /** 建立连接并启动自动重连（幂等） */
@@ -59,6 +60,18 @@ class TcpClient {
     /** 发送一条 JSON（带长度前缀） */
     fun sendJson(obj: JSONObject): Boolean {
         return sendRaw(obj.toString().toByteArray(Charsets.UTF_8))
+    }
+
+    /** 订阅电脑画面流（服务端按 fps 推 JPEG 帧） */
+    fun subscribeScreen(fps: Int): Boolean {
+        return sendJson(
+            JSONObject().put("op", "subscribe_screen").put("fps", fps).put("quality", 70)
+        )
+    }
+
+    /** 取消订阅电脑画面流 */
+    fun unsubscribeScreen(): Boolean {
+        return sendJson(JSONObject().put("op", "unsubscribe_screen"))
     }
 
     // ---- 内部实现 ----
@@ -96,19 +109,30 @@ class TcpClient {
         }, "tcp-heartbeat").apply { isDaemon = true; start() }
     }
 
-    /** 读回包：解析长度前缀并丢弃载荷（可在此扩展为处理服务端响应） */
+    /**
+     * 读回包。服务端→客户端帧格式：[4 字节大端长度][1 字节类型][载荷]。
+     *  - 类型 0x00：载荷为 JSON 回执（丢弃）
+     *  - 类型 0x01：载荷为 JPEG 图片字节，回调 [Listener.onJpegFrame]
+     */
     private fun readLoop(s: Socket) {
         val input = s.getInputStream()
-        val buf = ByteArray(4096)
         try {
             while (running) {
                 val len = readFrameLen(input) ?: break
                 if (len <= 0 || len > MAX_PAYLOAD) break
+                val type = input.read()
+                if (type < 0) break
+                val payload = ByteArray(len)
                 var read = 0
                 while (read < len) {
-                    val n = input.read(buf, 0, min(buf.size, len - read))
+                    val n = input.read(payload, read, len - read)
                     if (n < 0) break
                     read += n
+                }
+                if (read < len) break
+                when (type) {
+                    0x01 -> listener?.onJpegFrame(payload)
+                    else -> { /* 0x00 及其它：JSON 回执，当前丢弃 */ }
                 }
             }
         } catch (e: Exception) {

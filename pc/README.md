@@ -16,6 +16,7 @@ pc/
   requirements.txt      依赖列表
   protocol.py           帧协议与指令编解码
   mouse_controller.py   鼠标控制逻辑
+  screen_stream.py      屏幕截图推流（mss + Pillow，JPEG 帧）
   server.py             主入口（TCP 服务，CLI 模式）
   gui.py                桌面控制端（PySide6 GUI 模式，可选）
   desktop.spec          PyInstaller 打包配置（打 exe 用，可选）
@@ -56,6 +57,8 @@ python server.py --alpha 0.3 --scale 1
 | `--port` | `9999` | 监听端口 |
 | `--alpha` | `0.3` | EMA 平滑系数（0~1），越大越跟手 |
 | `--scale` | `1` | 坐标缩放倍率，作用于归一化坐标 |
+| `--stream-fps` | `10` | 屏幕推流默认帧率（可被订阅消息覆盖） |
+| `--stream-quality` | `70` | 屏幕推流默认 JPEG 质量（可被订阅消息覆盖） |
 
 ## 桌面 GUI 启动（python gui.py）
 
@@ -133,6 +136,39 @@ pyinstaller desktop.spec
 | `ping` | 心跳，不动作，服务端回 `{"op":"pong"}` |
 
 未知字段会被忽略；未知 op 会被忽略且不抛异常。
+
+## 屏幕推流协议
+
+手机端可订阅电脑屏幕画面（用于本地 YOLO 推理）。屏幕帧与指令回执复用同一 TCP 连接，靠「帧类型字节」区分。
+
+服务端→客户端方向统一使用带类型字节的帧：
+
+帧格式：`[4 字节大端长度][1 字节类型][载荷]`
+
+| 类型字节 | 载荷 | 说明 |
+| --- | --- | --- |
+| `0x00` | JSON 字节串 | 指令回执（如 `{"op":"ok"}`、`{"op":"pong"}`） |
+| `0x01` | JPEG 图片字节 | 屏幕帧（RGB，目标宽 640 等比缩放） |
+
+> 说明：长度字段指「类型字节 + 载荷」的总字节数；客户端→服务端的请求仍是无类型前缀的普通 JSON 帧（见上文「帧协议」），保持不变。
+
+### 订阅 / 取消订阅
+
+客户端→服务端发送 JSON（无类型前缀）：
+
+- 订阅推流：
+  ```json
+  {"op":"subscribe_screen","fps":10,"quality":70}
+  ```
+  服务端对该连接启动推流；`fps`（默认 10）与 `quality`（JPEG 质量，默认 70）可选。
+- 取消订阅：
+  ```json
+  {"op":"unsubscribe_screen"}
+  ```
+
+订阅成功后，服务端以约 `fps` 帧/秒的速率持续发送 `0x01` 类型屏幕帧；收到取消订阅或连接断开后停止。服务端对订阅/取消订阅亦回执 `{"op":"ok"}`（类型 `0x00`）。
+
+> 依赖：屏幕推流需要 `mss` 与 `pillow`（见 `pip install -r requirements.txt`）。依赖缺失时给出 warning，不影响鼠标控制指令。
 
 ## TCP / WiFi 说明
 
