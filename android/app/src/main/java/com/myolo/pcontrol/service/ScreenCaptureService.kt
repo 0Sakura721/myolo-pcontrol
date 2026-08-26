@@ -57,9 +57,9 @@ class ScreenCaptureService : Service() {
             val projection = projectionManager.getMediaProjection(resultCode, data)
             // 按设备档位动态选择捕获分辨率与帧率（硬件感知动态调度，降低低端机发热/卡顿）
             val (w, h, fps) = when (DeviceTier.backend.tier) {
-                Tier.LOW -> 320 to 240 to 12
-                Tier.MEDIUM -> 480 to 320 to 15
-                else -> 640 to 480 to 25
+                Tier.LOW -> Triple(320, 240, 12)
+                Tier.MEDIUM -> Triple(480, 320, 15)
+                else -> Triple(640, 480, 25)
             }
             capture = ScreenCapture(
                 projection, w, h,
