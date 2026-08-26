@@ -37,7 +37,7 @@ python server.py            # 默认监听 0.0.0.0:9999
    - `libncnn.so` → `app/src/main/jniLibs/<abi>/`
    - `libncnn` 头文件 → `app/src/main/cpp/libncnn/include/`
    - `model.param` / `model.bin` → 安装后 `adb push` 到 `/data/data/com.myolo.pcontrol/files/models/`
-3. 安装 APK，填写电脑端 IP，点击「开始捕获」即可。
+3. 安装 APK，填写电脑端 IP，点击「开始捕获」即可。模型可通过应用内「模型管理」页（主界面按钮）从存储导入 .param/.bin 并启用/切换，也可 `adb push` 到 `/data/data/com.myolo.pcontrol/files/models/`。
 
 ## 技术选型
 
