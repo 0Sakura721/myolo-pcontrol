@@ -37,6 +37,7 @@ pip install -r requirements.txt
 
 > 说明：Windows 上屏幕尺寸通过 `ctypes` 调用 `GetSystemMetrics` 获取，
 > 非 Windows 平台回退到 1920x1080，无需额外依赖。
+> 免安装：`dist/myolo-pcontrol-desktop-win64.zip` 解压双击 exe 即用（已内置依赖，无需 Python）。
 
 ## 启动命令
 
