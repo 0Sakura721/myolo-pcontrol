@@ -1,7 +1,7 @@
 #include "ncnn_detector.h"
 
-// NCNN 预编译库头文件（需先解压 libncnn 到 src/main/cpp/libncnn/）
-#include <net.h>
+// NCNN 预编译库头文件（新结构：libncnn/include/ncnn/，需先解压 libncnn 到 src/main/cpp/libncnn/）
+#include <ncnn/net.h>
 #include <algorithm>
 #include <cmath>
 

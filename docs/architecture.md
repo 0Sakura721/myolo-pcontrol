@@ -88,8 +88,8 @@ model.export(format="ncnn", imgsz=640, half=True)   # FP16 推荐
 1. `pip install ultralytics` 并导出 `yolo26n` 的 NCNN 模型（`.param` + `.bin`）。
 2. 从 [ncnn](https://github.com/Tencent/ncnn/releases) 下载对应 ABI 的预编译库，或从源码编译。
 3. 拷贝到：
-   - 头文件 → `app/src/main/cpp/libncnn/include/`
-   - 推理库 → `app/src/main/jniLibs/<abi>/`（`libncnn.so`）
+   - 头文件 → `app/src/main/cpp/libncnn/include/`（解压 `ncnn-*-android-vulkan-shared` 包取 `<abi>/include`，内含 `ncnn/` 子目录）
+   - 推理库 → `app/src/main/jniLibs/<abi>/`（`libncnn.so`，shared 包中位于 `<abi>/lib/`）
    - 模型 → 安装 APK 后 `adb push model.param /data/data/com.myolo.pcontrol/files/models/`、`adb push model.bin /data/data/com.myolo.pcontrol/files/models/`
 
 > 模型与 `.so` 体积大，已 `.gitignore`，不随仓库分发。

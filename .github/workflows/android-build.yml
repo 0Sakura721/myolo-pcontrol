@@ -29,29 +29,29 @@ jobs:
       - name: Download NCNN prebuilt libs
         run: |
           set -eux
-          # 取 Tencent/ncnn 最新 release 的 android-vulkan 预编译包（含 include + 各 ABI libncnn.so）
+          # 取 Tencent/ncnn 最新 release 的 android-vulkan-shared 预编译包（含 include/ncnn + 各 ABI libncnn.so）
           ASSET_URL=$(python3 - <<'EOF'
           import json, urllib.request
           req = urllib.request.Request('https://api.github.com/repos/Tencent/ncnn/releases/latest',
                                        headers={'User-Agent': 'dsh-ci'})
           d = json.load(urllib.request.urlopen(req, timeout=30))
           for a in d.get('assets', []):
-              if a['name'].endswith('android-vulkan.zip'):
+              if a['name'].endswith('android-vulkan-shared.zip'):
                   print(a['browser_download_url'])
                   break
           EOF
           )
           if [ -z "$ASSET_URL" ]; then
-            ASSET_URL="https://github.com/Tencent/ncnn/releases/download/20240717/ncnn-20240717-android-vulkan.zip"
+            ASSET_URL="https://github.com/Tencent/ncnn/releases/download/20240717/ncnn-20240717-android-vulkan-shared.zip"
           fi
           curl -fL -o ncnn.zip "$ASSET_URL"
           unzip -q ncnn.zip
-          NCNN_ROOT=$(find . -maxdepth 1 -type d -name 'ncnn-*-android-vulkan' | head -1)
+          NCNN_ROOT=$(find . -maxdepth 1 -type d -name 'ncnn-*-android-vulkan-shared' | head -1)
           mkdir -p android/app/src/main/cpp/libncnn
-          cp -r "$NCNN_ROOT/include" android/app/src/main/cpp/libncnn/include
+          cp -r "$NCNN_ROOT/arm64-v8a/include" android/app/src/main/cpp/libncnn/include
           for abi in arm64-v8a armeabi-v7a; do
             mkdir -p "android/app/src/main/jniLibs/$abi"
-            cp "$NCNN_ROOT/$abi/libncnn.so" "android/app/src/main/jniLibs/$abi/libncnn.so"
+            cp "$NCNN_ROOT/$abi/lib/libncnn.so" "android/app/src/main/jniLibs/$abi/libncnn.so"
           done
           ls -la android/app/src/main/jniLibs/arm64-v8a/ android/app/src/main/jniLibs/armeabi-v7a/
 
