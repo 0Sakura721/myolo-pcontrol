@@ -29,6 +29,7 @@ local.properties
 *.dlc
 *.hiai
 *.pt
+yolo26n_ncnn_model/
 
 # gradle
 android/.gradle/
