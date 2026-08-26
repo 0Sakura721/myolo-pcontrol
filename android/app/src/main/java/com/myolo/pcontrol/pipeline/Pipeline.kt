@@ -207,10 +207,9 @@ object Pipeline {
         }
     }
 
-    private companion object {
-        const val MISS_DROP_AFTER = 30   // 连续无目标帧数阈值
-        const val DROP_EVERY = 3         // 降帧后每 N 帧处理 1 帧
-    }
+    // 动态调度参数（object 单例顶层常量）
+    private const val MISS_DROP_AFTER = 30   // 连续无目标帧数阈值
+    private const val DROP_EVERY = 3         // 降帧后每 N 帧处理 1 帧
 
     fun disconnect() = tcp.disconnect()
 
