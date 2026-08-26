@@ -111,11 +111,7 @@ object Pipeline {
         } catch (e: Exception) {
             return
         }
-        if (det.size >= 6) {
-            tcp.sendJson(CommandEncoder.encodeMoveByDetection(det))
-        } else {
-            tcp.sendJson(CommandEncoder.encodeNone())
-        }
+        handleDetections(det)
     }
 
     /**
@@ -160,11 +156,7 @@ object Pipeline {
         } catch (e: Exception) {
             return
         }
-        if (det.size >= 6) {
-            tcp.sendJson(CommandEncoder.encodeMoveByDetection(det))
-        } else {
-            tcp.sendJson(CommandEncoder.encodeNone())
-        }
+        handleDetections(det)
     }
 
     /**
@@ -190,6 +182,34 @@ object Pipeline {
         }
         ensureModel(context)
         tcp.connect(AppConfig.serverIp, AppConfig.serverPort)
+    }
+
+    // ------------------------------------------------------------------
+    // 动态调度：连续无目标时降帧（等效降频），目标出现即恢复
+    // ------------------------------------------------------------------
+    @Volatile private var missFrames = 0
+    @Volatile private var frameCounter = 0
+
+    /**
+     * 统一处理检测结果：有目标 → 重置 miss 并发送目标中心；
+     * 无目标 → 连续 miss 超过 [MISS_DROP_AFTER] 帧后跳帧（每 [DROP_EVERY] 帧处理 1 帧，
+     * 等效 30fps→10fps），降低推理与功耗；目标一出现立即恢复满帧。
+     */
+    private fun handleDetections(det: FloatArray) {
+        if (det.size >= 6) {
+            missFrames = 0
+            tcp.sendJson(CommandEncoder.encodeMoveByDetection(det))
+        } else {
+            missFrames++
+            frameCounter++
+            if (missFrames > MISS_DROP_AFTER && frameCounter % DROP_EVERY != 0) return
+            tcp.sendJson(CommandEncoder.encodeNone())
+        }
+    }
+
+    private companion object {
+        const val MISS_DROP_AFTER = 30   // 连续无目标帧数阈值
+        const val DROP_EVERY = 3         // 降帧后每 N 帧处理 1 帧
     }
 
     fun disconnect() = tcp.disconnect()

@@ -41,7 +41,7 @@ net.load_model("yolo26n.bin");
 | 低端 | Vulkan 弱+<4GB | NCNN+CPU(ARM NEON) | INT8 量化 | `use_vulkan_compute=false` |
 
 启动时检测 NPU 可用性、Vulkan 版本与扩展、CPU 与内存，自动分级。
-运行期动态调度：按档位自动选择捕获分辨率与帧率（LOW 320x240@12fps / MEDIUM 480x320@15fps / 高档 640x480@25fps），通过帧率节流降低推理负载、发热与卡顿（ScreenCapture.maxFps）。
+运行期动态调度（已实现）：按档位预设捕获分辨率/帧率（LOW 320x240@12 / MEDIUM 480x320@15 / 高档 640x480@25）；推理侧连续无目标 ≥30 帧自动跳帧降频（每 3 帧处理 1 帧 ≈30→10fps），目标一出现立即恢复满帧率（Pipeline.handleDetections）。后端：NCNN 在 Vulkan 初始化失败时自动回退 ARM CPU（use_arm_neon 默认启用）。
 
 ### 2.4 后处理与指令编码
 - 解析检测框 → NMS/无 NMS(端到端) → 置信度过滤(0.5)
@@ -83,6 +83,16 @@ model = YOLO("yolo26n.pt")
 model.export(format="ncnn", imgsz=640, half=True)   # FP16 推荐
 # INT8 需先 FP16 导出，再用 ncnn2int8 量化
 ```
+
+### 档位配置参考
+| 档位 | 模型 | 量化 | 输入分辨率 | 大小 | 预期 FPS |
+|------|------|------|-----------|------|----------|
+| 低端(无Vulkan) | YOLOv26n | INT8 | 320 | ~1.8MB | 8-12 |
+| 中端(骁龙778G) | YOLOv26n | FP16 | 416 | ~3.5MB | 18-25 |
+| 高端(骁龙8Gen2) | YOLOv26n | FP16 | 640 | ~3.5MB | 35-50+ |
+| 带NPU(骁龙8/麒麟9) | YOLOv26n | NPU专用(.dlc/.hiai) | 640 | 厂商 | 50-80+ |
+
+> 参考仓库：majun2019/ncnn-android-yolo26lt（Android 端 YOLOv26 NCNN 部署起点）、AimBuddy（NCNN+Vulkan+YOLOv26n 屏幕捕获/跟踪，Adaptive crop 借鉴）。ultralytics 版本兼容性：最新版导出偶有警告，异常时回退 8.4.0。.param/.bin 必须成对使用，严禁混用不同导出批次。
 
 ## 6. 模型准备（构建/运行 Android 前）
 
