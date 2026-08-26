@@ -1,1 +1,10 @@
+# 运行 pc/server.py（CLI 模式）所需
 pynput
+
+# 运行 pc/gui.py（桌面 GUI 模式，PySide6）所需
+PySide6
+
+# 可选：打包 exe 时使用
+#   pip install pyinstaller
+#   pyinstaller desktop.spec
+# pyinstaller

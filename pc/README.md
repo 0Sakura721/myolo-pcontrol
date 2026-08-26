@@ -16,9 +16,15 @@ pc/
   requirements.txt      依赖列表
   protocol.py           帧协议与指令编解码
   mouse_controller.py   鼠标控制逻辑
-  server.py             主入口（TCP 服务）
+  server.py             主入口（TCP 服务，CLI 模式）
+  gui.py                桌面控制端（PySide6 GUI 模式，可选）
+  desktop.spec          PyInstaller 打包配置（打 exe 用，可选）
   README.md             本说明
 ```
+
+电脑端提供两种运行模式（功能一致，核心复用同一套协议与鼠标控制逻辑）：
+- `server.py`：无界面命令行（CLI）模式。
+- `gui.py`：带界面的桌面控制端（可视化监听端口、EMA 系数、坐标倍率设置，实时显示连接数与指令日志）。
 
 ## 安装依赖
 
@@ -49,6 +55,46 @@ python server.py --alpha 0.3 --scale 1
 | `--port` | `9999` | 监听端口 |
 | `--alpha` | `0.3` | EMA 平滑系数（0~1），越大越跟手 |
 | `--scale` | `1` | 坐标缩放倍率，作用于归一化坐标 |
+
+## 桌面 GUI 启动（python gui.py）
+
+需要安装了图形界面依赖。先安装依赖：
+
+```bash
+cd pc
+pip install -r requirements.txt
+python gui.py
+```
+
+界面说明：
+
+- **监听设置**：监听端口、EMA 平滑系数（alpha）、坐标缩放倍率，可在启动前调节。
+- **服务控制**：「启动服务 / 停止服务」按钮；「当前连接数」实时显示；
+  「暂停鼠标控制」复选框（或按键盘 `空格` 键）可临时暂停鼠标动作，收到指令仅回执不控制。
+- **指令日志**：逐条显示收到的指令与执行结果，格式如
+  `[12:00:01] 192.168.1.5:54321  move x=0.42 y=0.87 -> ok`。
+
+> 说明：GUI 模式与 `server.py` 复用同一套帧协议（`protocol.py`）与鼠标控制逻辑（`mouse_controller.py`），
+> 参数含义与下表完全一致。关闭窗口时会干净地停止所有线程与 socket。
+
+## 打包 exe（pyinstaller desktop.spec）
+
+需要安装 PyInstaller（可选依赖）：
+
+```bash
+cd pc
+pip install pyinstaller
+pyinstaller desktop.spec
+```
+
+- 产物：`dist/myolo-pcontrol-desktop.exe`（单文件，无控制台窗口）。
+- 也可以直接用命令行方式：
+  ```bash
+  pyinstaller -F -w gui.py --name myolo-pcontrol-desktop
+  ```
+  其中的 `-F`（onefile 单文件）、`-w`（windowed，不弹控制台窗口）。
+- `desktop.spec` 已隐含引入 `pynput`；若调试时需要看到控制台输出，
+  把 `desktop.spec` 里的 `console=False` 改为 `True` 重新打包即可。
 
 ## 帧协议
 

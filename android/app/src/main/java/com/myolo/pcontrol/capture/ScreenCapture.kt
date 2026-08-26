@@ -6,10 +6,11 @@ import android.hardware.display.VirtualDisplay
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
+import android.os.Handler
 import android.os.HandlerThread
 
-/** 帧回调：rgba 为紧凑 W*H*4 的 RGBA8888 像素缓冲 */
-interface FrameCallback {
+/** 帧回调：rgba 为紧凑 W*H*4 的 RGBA8888 像素缓冲（fun interface，支持 SAM lambda） */
+fun interface FrameCallback {
     fun onFrame(rgba: ByteArray, width: Int, height: Int)
 }
 
@@ -33,7 +34,7 @@ class ScreenCapture(
 
     fun start() {
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
-        reader.setOnImageAvailableListener({ onImageAvailable(it) }, handlerThread.looper)
+        reader.setOnImageAvailableListener({ onImageAvailable(it) }, Handler(handlerThread.looper!!))
         imageReader = reader
         virtualDisplay = mediaProjection.createVirtualDisplay(
             "ScreenCapture",

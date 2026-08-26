@@ -26,6 +26,10 @@ pip install -r requirements.txt
 python server.py            # 默认监听 0.0.0.0:9999
 ```
 
+电脑端有两种模式（复用同一套协议与鼠标控制逻辑）：
+- `python server.py`：命令行（CLI）模式。
+- `python gui.py`：带界面的桌面控制端（可视化设置监听端口/EMA/坐标倍率，实时显示连接数与指令日志）。
+
 ### Android 端
 
 1. 构建：`cd android && gradle assembleDebug`
