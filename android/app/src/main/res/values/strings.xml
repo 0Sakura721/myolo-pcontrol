@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MyoloPcontrol</string>
+
+    <!-- 主界面 -->
     <string name="label_source">画面来源</string>
     <string name="radio_pc_stream">电脑画面流</string>
     <string name="radio_phone_screen">手机屏幕</string>
@@ -13,11 +15,35 @@
     <string name="btn_click">点击</string>
     <string name="btn_scroll_up">上滚</string>
     <string name="btn_scroll_down">下滚</string>
-    <string name="status_default">状态：未连接</string>
+    <string name="status_default">未连接</string>
     <string name="btn_models">模型管理</string>
+    <string name="btn_models_hint">本地 / 在线模型下载与启用</string>
+
+    <!-- 状态卡 -->
+    <string name="status_title">连接状态</string>
+
+    <!-- 控制 / 捕获卡标题 -->
+    <string name="card_control_title">控制</string>
+    <string name="card_capture_title">捕获</string>
+    <string name="card_preview_title">画面预览</string>
+
+    <!-- 首屏引导 -->
+    <string name="guide_title">快速上手</string>
+    <string name="guide_step1">① 电脑端双击 exe 启动服务</string>
+    <string name="guide_step2">② 填写上方电脑 IP 后点「连接」</string>
+    <string name="guide_step3">③ 选好画面来源，点「开始捕获」</string>
+
+    <!-- 模型管理 -->
+    <string name="model_current_title">当前模型</string>
     <string name="model_current_default">当前模型：无</string>
     <string name="model_import">导入模型文件</string>
     <string name="model_refresh">刷新</string>
-    <string name="model_online_title">模型商店（点击即可下载并启用）</string>
+    <string name="model_online_title">模型商店</string>
     <string name="model_local_title">本地模型</string>
+    <string name="model_online_subtitle">点击即可下载并启用</string>
+    <string name="model_online_state_download">点击下载</string>
+    <string name="model_online_state_unavail">暂未上架</string>
+    <string name="model_local_empty">本地还没有模型文件\n可在线下载，或点「导入模型文件」从存储选择。</string>
+    <string name="model_local_action">点击启用 · 长按删除</string>
+    <string name="model_local_active">当前使用中</string>
 </resources>

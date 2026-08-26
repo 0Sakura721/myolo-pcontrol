@@ -2,6 +2,7 @@ package com.myolo.pcontrol
 
 import android.net.Uri
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -55,14 +56,19 @@ class ModelManagerActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
     private fun buildOnlineList() {
         onlineBox.removeAllViews()
+        val inflater = LayoutInflater.from(this)
         for (item in ModelCatalog.ITEMS) {
-            val row = TextView(this).apply {
-                text = (if (item.available) "📥 " else "🚫 ") + item.displayName +
-                        "  (~${item.sizeMb}MB)\n" +
-                        "    ${item.desc}\n" +
-                        if (item.available) "    点击下载到手机并自动启用" else "    暂未上架"
-                textSize = 14f
-                setPadding(16, 14, 16, 14)
+            val row = inflater.inflate(R.layout.item_online_model, onlineBox, false)
+            row.findViewById<TextView>(R.id.tvOnlineName).text =
+                (if (item.available) "📥 " else "🚫 ") + item.displayName + "  (~${item.sizeMb}MB)"
+            row.findViewById<TextView>(R.id.tvOnlineDesc).text = item.desc
+            val state = row.findViewById<TextView>(R.id.tvOnlineState)
+            if (item.available) {
+                state.text = getString(R.string.model_online_state_download)
+                state.setTextColor(getColor(R.color.md_primary))
+            } else {
+                state.text = getString(R.string.model_online_state_unavail)
+                state.setTextColor(getColor(R.color.md_onSurfaceVariant))
             }
             row.setOnClickListener {
                 if (item.available) downloadModel(item)
@@ -162,22 +168,24 @@ class ModelManagerActivity : AppCompatActivity() {
         val models = Pipeline.listModels(this)
         if (models.isEmpty()) {
             val hint = TextView(this).apply {
-                text = "本地还没有模型文件。\n" +
-                        "可在上方「在线模型」下载，或点「导入模型文件」从存储选择。\n" +
-                        "也可 adb push 到 /data/data/com.myolo.pcontrol/files/models/"
+                text = getString(R.string.model_local_empty)
                 textSize = 14f
                 setPadding(16, 16, 16, 16)
             }
             listBox.addView(hint)
         }
 
+        val inflater = LayoutInflater.from(this)
         for ((param, bin) in models) {
             val active = param == Pipeline.modelParam
-            val row = TextView(this).apply {
-                text = (if (active) "● " else "○ ") + param +
-                        "\n    点击启用 · 长按删除（当前模型后需重新加载）"
-                textSize = 14f
-                setPadding(16, 14, 16, 14)
+            val row = inflater.inflate(R.layout.item_local_model, listBox, false)
+            row.findViewById<TextView>(R.id.tvLocalName).text = param
+            val state = row.findViewById<TextView>(R.id.tvLocalState)
+            if (active) {
+                state.text = getString(R.string.model_local_active)
+                state.setTextColor(getColor(R.color.status_connected))
+            } else {
+                state.text = ""
             }
             row.setOnClickListener { enableModel(param, bin) }
             row.setOnLongClickListener {

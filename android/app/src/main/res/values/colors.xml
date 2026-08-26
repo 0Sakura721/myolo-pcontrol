@@ -1,8 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF6750A4</color>
-    <color name="primary_dark">#FF625B71</color>
-    <color name="secondary">#FF625B71</color>
+    <!-- 主题色：蓝紫 / 青绿 科技感 -->
+    <color name="md_primary">#4C6EF5</color>
+    <color name="md_onPrimary">#FFFFFFFF</color>
+    <color name="md_primaryContainer">#E0E7FF</color>
+    <color name="md_onPrimaryContainer">#1A2B6B</color>
+    <color name="md_secondary">#14B8A6</color>
+    <color name="md_onSecondary">#FFFFFFFF</color>
+    <color name="md_secondaryContainer">#CCFBF1</color>
+    <color name="md_onSecondaryContainer">#0B3B36</color>
+    <color name="md_tertiary">#6366F1</color>
+    <color name="md_onTertiary">#FFFFFFFF</color>
+
+    <!-- 表面 / 背景 -->
+    <color name="md_background">#F2F4FB</color>
+    <color name="md_surface">#FDFDFF</color>
+    <color name="md_onSurface">#1A1B25</color>
+    <color name="md_surfaceVariant">#E6E9F2</color>
+    <color name="md_onSurfaceVariant">#44485A</color>
+    <color name="md_outline">#9AA0B0</color>
+    <color name="md_error">#E53935</color>
+
+    <!-- 连接状态色 -->
+    <color name="status_connected">#2EBD6E</color>
+    <color name="status_disconnected">#E53935</color>
+    <color name="status_idle">#9AA0A6</color>
+
+    <!-- 兼容旧引用 -->
+    <color name="primary">@color/md_primary</color>
+    <color name="primary_dark">#FF3D5BD9</color>
+    <color name="secondary">@color/md_secondary</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
     <color name="gray">#FF222222</color>

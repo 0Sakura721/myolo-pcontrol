@@ -2,17 +2,19 @@ package com.myolo.pcontrol
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.myolo.pcontrol.net.TcpClient
 import com.myolo.pcontrol.pipeline.AppConfig
 import com.myolo.pcontrol.pipeline.Pipeline
@@ -30,6 +32,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ipEdit: EditText
     private lateinit var statusText: TextView
     private lateinit var preview: ImageView
+    private lateinit var statusDot: View
+    private lateinit var guideCard: View
 
     private var serviceStarted = false
     private lateinit var projectionManager: MediaProjectionManager
@@ -46,9 +50,11 @@ class MainActivity : AppCompatActivity() {
             }
             ContextCompat.startForegroundService(this, intent)
             serviceStarted = true
-            statusText.text = "状态：捕获中，目标 ${AppConfig.serverIp}:${AppConfig.serverPort}"
+            findViewById<Button>(R.id.btnCaptureStart).isEnabled = false
+            findViewById<Button>(R.id.btnCaptureStop).isEnabled = true
+            updateStatus("捕获中，目标 ${AppConfig.serverIp}:${AppConfig.serverPort}", R.color.status_connected)
         } else {
-            statusText.text = "状态：用户取消授权"
+            updateStatus("用户取消授权", R.color.status_idle)
         }
     }
 
@@ -61,9 +67,13 @@ class MainActivity : AppCompatActivity() {
         ipEdit = findViewById(R.id.ipEdit)
         statusText = findViewById(R.id.statusText)
         preview = findViewById(R.id.preview)
+        statusDot = findViewById(R.id.statusDot)
+        guideCard = findViewById(R.id.guideCard)
+        setConnectionButtons(false)
 
         // 画面来源切换：电脑画面流（默认）/ 手机屏幕
-        findViewById<RadioGroup>(R.id.sourceGroup).setOnCheckedChangeListener { _, checkedId ->
+        findViewById<MaterialButtonToggleGroup>(R.id.sourceGroup).addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
             if (checkedId == R.id.radioPcStream) {
                 Pipeline.switchCaptureMode(Pipeline.MODE_PC_STREAM)
             } else if (checkedId == R.id.radioPhoneScreen) {
@@ -76,7 +86,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnConnect).setOnClickListener { connectServer() }
         findViewById<Button>(R.id.btnDisconnect).setOnClickListener {
             Pipeline.disconnect()
-            statusText.text = "状态：已断开"
+            updateStatus("已断开", R.color.status_disconnected)
+            setConnectionButtons(false)
+            guideCard.visibility = View.VISIBLE
         }
         findViewById<Button>(R.id.btnClick).setOnClickListener {
             // 点击屏幕中心（演示；实际可用触摸坐标）
@@ -96,7 +108,7 @@ class MainActivity : AppCompatActivity() {
     private fun startCapture() {
         // 电脑画面流：不启用本机 MediaProjection，连接服务端后即开始接收电脑画面
         if (Pipeline.captureMode == Pipeline.MODE_PC_STREAM) {
-            statusText.text = "状态：电脑画面流，请先连接服务端"
+            updateStatus("电脑画面流，请先连接服务端", R.color.status_idle)
             Toast.makeText(this, "电脑画面流：点「连接」后开始接收电脑画面", Toast.LENGTH_LONG).show()
             return
         }
@@ -108,7 +120,9 @@ class MainActivity : AppCompatActivity() {
         if (serviceStarted) {
             stopService(Intent(this, ScreenCaptureService::class.java))
             serviceStarted = false
-            statusText.text = "状态：已停止捕获"
+            updateStatus("已停止捕获", R.color.status_idle)
+            findViewById<Button>(R.id.btnCaptureStop).isEnabled = false
+            findViewById<Button>(R.id.btnCaptureStart).isEnabled = true
         }
     }
 
@@ -117,16 +131,32 @@ class MainActivity : AppCompatActivity() {
         if (ip.isNotEmpty()) AppConfig.serverIp = ip
         Pipeline.connect(this, object : TcpClient.Listener {
             override fun onConnected() = runOnUiThread {
-                statusText.text = "状态：已连接 ${AppConfig.serverIp}"
+                updateStatus("已连接 ${AppConfig.serverIp}", R.color.status_connected)
+                setConnectionButtons(true)
+                guideCard.visibility = View.GONE
             }
 
             override fun onDisconnected(reason: String?) = runOnUiThread {
-                statusText.text = "状态：连接断开 ${reason ?: ""}"
+                updateStatus("连接断开 ${reason ?: ""}", R.color.status_disconnected)
+                setConnectionButtons(false)
+                guideCard.visibility = View.VISIBLE
             }
         })
         if (!Pipeline.ensureModel(this)) {
             Toast.makeText(this, "模型缺失：请将 model.param/model.bin 放入 files/models", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun setConnectionButtons(enabled: Boolean) {
+        findViewById<Button>(R.id.btnDisconnect).isEnabled = enabled
+        findViewById<Button>(R.id.btnClick).isEnabled = enabled
+        findViewById<Button>(R.id.btnScrollUp).isEnabled = enabled
+        findViewById<Button>(R.id.btnScrollDown).isEnabled = enabled
+    }
+
+    private fun updateStatus(text: String, dotColorRes: Int) {
+        statusText.text = text
+        statusDot.backgroundTintList = ColorStateList.valueOf(getColor(dotColorRes))
     }
 
     override fun onDestroy() {
