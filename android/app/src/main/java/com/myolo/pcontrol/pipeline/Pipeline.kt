@@ -170,7 +170,7 @@ object Pipeline {
     /**
      * 切换画面来源。电脑画面流模式：连接后自动订阅；切走时取消订阅（未连接时为空操作）。
      */
-    fun setCaptureMode(mode: String) {
+    fun switchCaptureMode(mode: String) {
         captureMode = mode
         if (mode == MODE_PC_STREAM) tcp.subscribeScreen(10) else tcp.unsubscribeScreen()
     }

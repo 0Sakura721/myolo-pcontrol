@@ -65,9 +65,9 @@ class MainActivity : AppCompatActivity() {
         // 画面来源切换：电脑画面流（默认）/ 手机屏幕
         findViewById<RadioGroup>(R.id.sourceGroup).setOnCheckedChangeListener { _, checkedId ->
             if (checkedId == R.id.radioPcStream) {
-                Pipeline.setCaptureMode(Pipeline.MODE_PC_STREAM)
+                Pipeline.switchCaptureMode(Pipeline.MODE_PC_STREAM)
             } else if (checkedId == R.id.radioPhoneScreen) {
-                Pipeline.setCaptureMode(Pipeline.MODE_PHONE_SCREEN)
+                Pipeline.switchCaptureMode(Pipeline.MODE_PHONE_SCREEN)
             }
         }
 

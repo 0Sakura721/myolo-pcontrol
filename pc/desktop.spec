@@ -24,6 +24,10 @@ a = Analysis(
         "pynput.keyboard",
         "pynput.keyboard._win32",
         "pynput.mouse._win32",
+        # 屏幕推流（screen_stream.py 内部延迟导入，需显式收集）
+        "mss",
+        "PIL",
+        "PIL.Image",
     ],
     hookspath=[],
     hooksconfig={},
