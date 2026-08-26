@@ -80,13 +80,26 @@ class ModelManagerActivity : AppCompatActivity() {
 
     private fun downloadModel(item: ModelCatalog.ModelItem) {
         progress.visibility = ProgressBar.VISIBLE
-        Toast.makeText(this, "开始下载 ${item.displayName} ...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "正在获取下载地址（GitHub Releases API）...", Toast.LENGTH_SHORT).show()
         Thread {
+            // 动态源：先调 GitHub Releases API 解析最新资产下载地址（参照 Kaze-SLauncher CoreSources）
+            val target = try {
+                ModelCatalog.fetchAssetUrls()[item.id]
+            } catch (e: Exception) {
+                null
+            }
+            if (target == null) {
+                runOnUiThread {
+                    progress.visibility = ProgressBar.GONE
+                    Toast.makeText(this, "获取下载地址失败：请检查网络后重试", Toast.LENGTH_LONG).show()
+                }
+                return@Thread
+            }
             val dir = File(filesDir, "models").apply { mkdirs() }
             var ok = true
             try {
-                download(item.paramUrl, File(dir, "${item.id}.param"))
-                download(item.binUrl, File(dir, "${item.id}.bin"), minBytes = 100 * 1024)
+                download(target.paramUrl, File(dir, "${item.id}.param"))
+                download(target.binUrl, File(dir, "${item.id}.bin"), minBytes = 100 * 1024)
             } catch (e: Exception) {
                 ok = false
             }
