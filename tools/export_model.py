@@ -29,10 +29,17 @@ def main():
 
     src = os.path.dirname(export_path)
     os.makedirs(OUT, exist_ok=True)
+    # 产物命名兼容：新版 model.ncnn.param；旧版 model.param
+    param_src = os.path.join(src, "model.ncnn.param")
+    if not os.path.exists(param_src):
+        param_src = os.path.join(src, "model.param")
+    bin_src = os.path.join(src, "model.ncnn.bin")
+    if not os.path.exists(bin_src):
+        bin_src = os.path.join(src, "model.bin")
     param_dst = os.path.join(OUT, f"{name}_ncnn.param")
     bin_dst = os.path.join(OUT, f"{name}_ncnn.bin")
-    shutil.copy(os.path.join(src, "model.param"), param_dst)
-    shutil.copy(os.path.join(src, "model.bin"), bin_dst)
+    shutil.copy(param_src, param_dst)
+    shutil.copy(bin_src, bin_dst)
     print(f"[3/3] 完成 -> {param_dst} ({os.path.getsize(param_dst) / 1024:.0f} KB)")
     print(f"      -> {bin_dst} ({os.path.getsize(bin_dst) / 1024 / 1024:.1f} MB)")
     print("提示：可选 --name 的模型（yolov8n/yolo11n 更小更稳），或调整 imgsz 如 416。")

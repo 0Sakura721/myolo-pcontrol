@@ -28,6 +28,7 @@ local.properties
 *.engine
 *.dlc
 *.hiai
+*.pt
 
 # gradle
 android/.gradle/

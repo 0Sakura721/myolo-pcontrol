@@ -80,9 +80,10 @@ std::vector<Box> NcnnDetector::detect(const uint8_t* rgba, int width, int height
     ncnn::Extractor ex = impl->net.create_extractor();
     ex.input("images", inPad);
 
-    // 输出张量：YOLO 导出层名通常为 output/out，需与模型一致
+    // 输出张量：配套的 yolo26n（ultralytics 导出）输出层为 out0（端到端 nms-free）。
+    // 若换用其它模型（yolov8n 等），改为对应层名（如 output0/out）并核对布局。
     ncnn::Mat out;
-    ex.extract("out", out);
+    ex.extract("out0", out);
 
     // ---------- 通用解码（nms-free / 端到端策略）----------
     // 说明：此处按常见布局 [1, 4+num_classes, N]（通道优先，out.cstep 为通道步长）
