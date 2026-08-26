@@ -616,8 +616,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("myolo-pcontrol 桌面控制端 v%s（手机远程控制电脑鼠标）" % VERSION)
-        self.resize(920, 680)
-        self.setMinimumSize(800, 600)
+        self.resize(1000, 640)
+        self.setMinimumSize(860, 560)
 
         # 当前运行中的工作线程（未启动时为 None）
         self._worker = None
@@ -659,6 +659,12 @@ class MainWindow(QMainWindow):
         self._app_subtitle.setObjectName("appSubtitle")
         header.addWidget(self._app_subtitle)
         root.addLayout(header)
+
+        # --- 主体：左栏（三步）+ 右栏（日志） ---
+        body = QHBoxLayout()
+        body.setSpacing(12)
+        left = QVBoxLayout()
+        left.setSpacing(8)
 
         # --- 第 1 步 · 启动服务 ---
         step1 = QGroupBox("第 1 步 · 启动服务")
@@ -711,7 +717,7 @@ class MainWindow(QMainWindow):
         btn_row.addWidget(self._stop_btn)
         btn_row.addStretch()
         s1.addLayout(btn_row)
-        root.addWidget(step1)
+        left.addWidget(step1)
 
         # --- 第 2 步 · 手机端连接 ---
         step2 = QGroupBox("第 2 步 · 手机端连接")
@@ -740,7 +746,7 @@ class MainWindow(QMainWindow):
         self._conn_hint.setObjectName("hintLabel")
         self._conn_hint.setWordWrap(True)
         s2.addWidget(self._conn_hint)
-        root.addWidget(step2)
+        left.addWidget(step2)
 
         # --- 第 3 步 · 屏幕推流 ---
         step3 = QGroupBox("第 3 步 · 屏幕推流")
@@ -770,7 +776,10 @@ class MainWindow(QMainWindow):
         self._stream_hint.setObjectName("hintLabel")
         self._stream_hint.setWordWrap(True)
         s3.addWidget(self._stream_hint)
-        root.addWidget(step3)
+        left.addWidget(step3)
+        left.addStretch()
+
+        body.addLayout(left, 0)
 
         # --- 指令日志 ---
         log_box = QGroupBox("指令日志")
@@ -791,7 +800,8 @@ class MainWindow(QMainWindow):
         self._log_view.setMaximumBlockCount(2000)  # 限制日志条数，避免内存膨胀
         log_layout.addWidget(self._log_view)
         self._clear_log_btn.clicked.connect(self._log_view.clear)
-        root.addWidget(log_box, 1)
+        body.addWidget(log_box, 1)
+        root.addLayout(body)
 
         # 首次打开显示欢迎指引
         self._append_log("[欢迎] 欢迎！按上方步骤：1 启动服务 → 2 手机填 IP 连接 → 3 开始推流/使用")
