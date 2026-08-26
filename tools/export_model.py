@@ -27,7 +27,7 @@ def main():
     print(f"[2/3] 导出 NCNN (imgsz={imgsz}, fp16) ...")
     export_path = model.export(format="ncnn", imgsz=imgsz, half=True)
 
-    src = os.path.dirname(export_path)
+    src = export_path if os.path.isdir(export_path) else os.path.dirname(export_path)
     os.makedirs(OUT, exist_ok=True)
     # 产物命名兼容：新版 model.ncnn.param；旧版 model.param
     param_src = os.path.join(src, "model.ncnn.param")
