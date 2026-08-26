@@ -11,4 +11,8 @@
     <string name="btn_scroll_up">上滚</string>
     <string name="btn_scroll_down">下滚</string>
     <string name="status_default">状态：未连接</string>
+    <string name="btn_models">模型管理</string>
+    <string name="model_current_default">当前模型：无</string>
+    <string name="model_import">导入模型文件</string>
+    <string name="model_refresh">刷新</string>
 </resources>

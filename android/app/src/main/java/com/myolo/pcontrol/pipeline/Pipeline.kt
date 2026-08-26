@@ -32,22 +32,65 @@ object Pipeline {
     @Volatile var modelParam = "model.param"
     @Volatile var modelBin = "model.bin"
 
+    private const val MODELS_DIR = "models"
+    private const val PREFS_NAME = "myolo_prefs"
+    private const val KEY_PARAM = "model_param"
+    private const val KEY_BIN = "model_bin"
+    @Volatile private var prefsLoaded = false
+
     /**
-     * 加载模型（幂等）。模型文件需放到 files/models/ 下：
-     *   adb push model.param /data/data/com.myolo.pcontrol/files/models/
-     *   adb push model.bin   /data/data/com.myolo.pcontrol/files/models/
+     * 加载模型（幂等）。首次调用时从 SharedPreferences 恢复用户选中的模型。
      * @return 加载成功与否（模型缺失/失败返回 false）
      */
     fun ensureModel(context: Context): Boolean {
         if (modelLoaded) return true
+        if (!prefsLoaded) {
+            val sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            sp.getString(KEY_PARAM, null)?.let { modelParam = it }
+            sp.getString(KEY_BIN, null)?.let { modelBin = it }
+            prefsLoaded = true
+        }
         val cfg = DeviceTier.backend
-        val dir = File(context.filesDir, "models").apply { mkdirs() }
-        val param = File(dir, modelParam)
-        val bin = File(dir, modelBin)
+        val param = File(modelsDir(context), modelParam)
+        val bin = File(modelsDir(context), modelBin)
         if (!param.exists() || !bin.exists()) return false
         val ok = detector.create(param.absolutePath, bin.absolutePath, cfg.useGpu)
         modelLoaded = ok
         return ok
+    }
+
+    // ------------------------------------------------------------------
+    // 模型管理（列表/切换/删除），供 ModelManagerActivity 使用
+    // ------------------------------------------------------------------
+    private fun modelsDir(context: Context) = File(context.filesDir, MODELS_DIR).apply { mkdirs() }
+
+    /** 列出已导入的模型对（.param + 同名 .bin） */
+    fun listModels(context: Context): List<Pair<String, String>> {
+        val dir = modelsDir(context)
+        return dir.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".param") }
+            ?.mapNotNull { p ->
+                val bin = File(dir, p.name.removeSuffix(".param") + ".bin")
+                if (bin.exists()) p.name to bin.name else null
+            }
+            ?.sortedBy { it.first } ?: emptyList()
+    }
+
+    /** 启用指定模型并记忆选择；返回加载是否成功 */
+    fun setActiveModel(context: Context, param: String, bin: String): Boolean {
+        modelLoaded = false
+        modelParam = param
+        modelBin = bin
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_PARAM, param).putString(KEY_BIN, bin).apply()
+        return ensureModel(context)
+    }
+
+    /** 删除模型文件（连同 .bin） */
+    fun deleteModel(context: Context, param: String, bin: String) {
+        val dir = modelsDir(context)
+        File(dir, param).delete()
+        File(dir, bin).delete()
     }
 
     /** 捕获回调入口：每帧推理并发送指令 */

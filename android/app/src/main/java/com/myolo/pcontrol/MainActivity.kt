@@ -78,6 +78,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnScrollDown).setOnClickListener {
             Pipeline.sendScroll(120)
         }
+        findViewById<Button>(R.id.btnModels).setOnClickListener {
+            startActivity(Intent(this, ModelManagerActivity::class.java))
+        }
     }
 
     private fun startCapture() {
