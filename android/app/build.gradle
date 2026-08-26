@@ -7,6 +7,17 @@ android {
     namespace 'com.myolo.pcontrol'
     compileSdk 34
 
+    signingConfigs {
+        // 固定 debug 签名（仓库内 myolo-debug.keystore，学习项目专用；
+        // 正式发布请改为环境变量/SECRET 注入，勿提交释放密钥）
+        debug {
+            storeFile file("../myolo-debug.keystore")
+            storePassword "myolo123456"
+            keyAlias "myolo"
+            keyPassword "myolo123456"
+        }
+    }
+
     defaultConfig {
         applicationId "com.myolo.pcontrol"
         minSdk 24
@@ -28,6 +39,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
